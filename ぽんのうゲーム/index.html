@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ぽんのうゲーム - 後半サイズスリム化版</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            user-select: none;
+        }
+        
+        /* 全体レイアウト（16:9の横長画面） */
+        #game-layout {
+            display: flex;
+            width: 1000px;
+            height: 600px;
+            background-image: url('bg.png');
+            background-size: cover;
+            background-position: center;
+            background-color: #2c3e50;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 左側エリア */
+        #left-sidebar {
+            width: 250px;
+            background: transparent; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 30px 0;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+        
+        .panel {
+            background: rgba(0, 0, 0, 0.45); 
+            backdrop-filter: blur(4px);      
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            border-radius: 20px;
+            width: 85%;
+            padding: 20px 10px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .panel-title {
+            font-size: 16px;
+            color: #e0e0e0;
+            font-weight: bold;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+        .panel-value {
+            font-size: 42px;
+            font-weight: bold;
+            color: #f1c40f;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.8);
+        }
+
+        /* 中央エリア（ゲーム本箱） */
+        #game-center {
+            width: 500px;
+            height: 600px;
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.3);
+        }
+
+        /* 右側エリア（NEXT・進化の輪） */
+        #right-sidebar {
+            width: 250px;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 0;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+        #next-panel { 
+            height: 130px; 
+        }
+        #next-preview-slot {
+            width: 75px;
+            height: 75px;
+            margin: 8px auto 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 12px;
+        }
+        #next-img {
+            max-width: 85%;
+            max-height: 85%;
+            object-fit: contain;
+        }
+
+        #evolution-panel {
+            width: 215px;
+            height: 215px;
+            background: rgba(0, 0, 0, 0.5); 
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            position: relative;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .evo-item {
+            position: absolute;
+            width: 36px; 
+            height: 36px;
+            transform: translate(-50%, -50%);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .evo-secret {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e74c3c;
+            line-height: 1;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        .evo-arrow {
+            position: absolute;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: bold;
+            transform: translate(-50%, -50%);
+        }
+
+        /* スタート画面 */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('start_bg.png'), url('bg.png'); 
+            background-size: cover;
+            background-position: center;
+            background-color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+            align-items: center;
+            z-index: 200; 
+            transition: opacity 0.5s ease; 
+            opacity: 1;
+        }
+        .logo-container {
+            margin-top: 90px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fuwafuwa 2.6s ease-in-out infinite;
+        }
+        .game-logo-img {
+            max-width: 650px;
+            max-height: 180px;
+            object-fit: contain;
+        }
+        .game-logo-text {
+            color: #fff;
+            font-size: 58px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            text-shadow: 3px 3px 0 #000, -3px 3px 0 #000, 3px -3px 0 #000, -3px -3px 0 #000, 0 12px 25px rgba(0,0,0,0.7);
+        }
+        .start-btn-container {
+            margin-top: 70px; 
+        }
+
+        @keyframes fuwafuwa {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-14px); } 
+            100% { transform: translateY(0px); }
+        }
+
+        /* 暗転用レイヤー */
+        #blackout-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            z-index: 300; 
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        /* ゲームオーバー画面 */
+        #gameover-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        /* ボタンデザイン */
+        .btn {
+            padding: 16px 54px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            background: #e74c3c;
+            border: 3px solid #ffffff;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn:hover { background: #c0392b; transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/poly-decomp/0.3.0/poly-decomp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+</head>
+<body>
+
+<div id="game-layout">
+    <div id="blackout-overlay"></div>
+
+    <div id="start-screen">
+        <div class="logo-container">
+            <img class="game-logo-img" src="logo.png" alt="かめマージ！" onerror="this.style.display='none'; document.getElementById('backup-logo').style.display='block';">
+            <div id="backup-logo" class="game-logo-text" style="display:none;">かめマージ！</div>
+        </div>
+        <div class="start-btn-container">
+            <button class="btn" id="start-btn">GAME START</button>
+        </div>
+    </div>
+
+    <div id="left-sidebar">
+        <div class="panel">
+            <div class="panel-title">SCORE</div>
+            <div class="panel-value" id="score">0</div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">BEST SCORE</div>
+            <div class="panel-value" id="best-score">0</div>
+        </div>
+    </div>
+
+    <div id="game-center"></div>
+
+    <div id="right-sidebar">
+        <div class="panel" id="next-panel">
+            <div class="panel-title">NEXT</div>
+            <div id="next-preview-slot">
+                <img id="next-img" src="" alt="next">
+            </div>
+        </div>
+        
+        <div id="evolution-panel">
+            </div>
+    </div>
+
+    <div id="gameover-screen" class="screen">
+        <h1 style="color: #fff; font-size: 48px; text-shadow: 2px 2px 0 #000; margin-bottom: 20px;">GAME OVER</h1>
+        <div style="color: #f1c40f; font-size: 32px; font-weight: bold; margin-bottom: 30px; text-shadow: 2px 2px 0 #000;">
+            FINAL SCORE: <span id="final-score">0</span>
+        </div>
+        <button class="btn" id="retry-btn">もう一度遊ぶ</button>
+    </div>
+</div>
+
+<script>
+const { Engine, Render, Runner, Bodies, Composite, Body, Events, Vertices } = Matter;
+
+// --- ゲームの設定 ---
+const WIDTH = 500; 
+const HEIGHT = 600; 
+const DEADLINE_Y = 130; 
+const PLAY_AREA_HEIGHT = 450; 
+
+const container = document.getElementById('game-center');
+let score = 0;
+let bestScore = localStorage.getItem('turtle_best_score') || 0;
+let gameStarted = false;
+let gameOver = false;
+let deadlineTimer = null;
+
+document.getElementById('best-score').innerText = bestScore;
+
+const MAX_LEVEL = 8; 
+const GAME_ITEMS = [];
+
+// 【サイズ比率変更】レベル0〜3は据え置き、4以降は大きくなりすぎないように調整
+for (let i = 0; i <= MAX_LEVEL; i++) {
+    let calcSize = 60;
+    if (i <= 3) {
+        calcSize = 60 + i * 20;     // レベル0: 60px, レベル1: 80px, レベル2: 100px, レベル3: 120px
+    } else {
+        calcSize = 120 + (i - 3) * 10; // レベル4: 130px 〜 最大レベル8: 170px
+    }
+
+    GAME_ITEMS.push({
+        size: calcSize,
+        score: (i + 1) * 2,
+        image: `${i}.png`,
+        vertices: null
+    });
+}
+
+// 物理エンジン
+const engine = Engine.create({ constraintIterations: 3 });
+const world = engine.world;
+
+// レンダラー設定
+const render = Render.create({
+    element: container,
+    engine: engine,
+    options: {
+        width: WIDTH,
+        height: HEIGHT,
+        background: 'transparent', 
+        wireframes: false
+    }
+});
+Render.run(render);
+const runner = Runner.create();
+
+// 壁と床
+const wallOptions = { isStatic: true, render: { fillStyle: 'rgba(255, 255, 255, 0.3)' } };
+const ground = Bodies.rectangle(WIDTH / 2, HEIGHT - 10, WIDTH, 20, wallOptions);
+const leftWall = Bodies.rectangle(10, HEIGHT - (PLAY_AREA_HEIGHT/2) - 10, 20, PLAY_AREA_HEIGHT, wallOptions);
+const rightWall = Bodies.rectangle(WIDTH - 10, HEIGHT - (PLAY_AREA_HEIGHT/2) - 10, 20, PLAY_AREA_HEIGHT, wallOptions);
+Composite.add(world, [ground, leftWall, rightWall]);
+
+// デッドライン描画
+Events.on(render, 'afterRender', () => {
+    const context = render.context;
+    context.beginPath();
+    context.setLineDash([5, 5]);
+    context.moveTo(10, DEADLINE_Y);
+    context.lineTo(WIDTH - 10, DEADLINE_Y);
+    context.lineWidth = 3;
+    context.strokeStyle = gameOver ? '#c0392b' : '#e74c3c';
+    context.stroke();
+    context.setLineDash([]);
+});
+
+// ゴツゴツ判定生成
+function loadItemVertices() {
+    for (let i = 0; i <= MAX_LEVEL; i++) {
+        const item = GAME_ITEMS[i];
+        const sides = 5 + i;
+        const radius = item.size / 2;
+        
+        let path = "";
+        for (let j = 0; j < sides; j++) {
+            const angle = (j / sides) * Math.PI * 2;
+            const randomRadius = radius * (0.88 + Math.random() * 0.12);
+            const x = Math.cos(angle) * randomRadius + radius;
+            const y = Math.sin(angle) * randomRadius + radius;
+            path += `${x} ${y} `;
+        }
+        item.vertices = Vertices.fromPath(path);
+    }
+}
+
+// 進化の輪生成
+function createEvolutionUI() {
+    const circle = document.getElementById('evolution-panel');
+    const radius = 75; 
+    const centerX = 105;
+    const centerY = 105;
+    
+    for (let i = 0; i <= MAX_LEVEL; i++) {
+        const angle = (i / (MAX_LEVEL + 1)) * Math.PI * 2 - Math.PI / 2;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        
+        const itemEl = document.createElement('div');
+        itemEl.className = 'evo-item';
+        itemEl.style.left = `${x}px`;
+        itemEl.style.top = `${y}px`;
+        
+        if (i === MAX_LEVEL) {
+            itemEl.innerHTML = '<span class="evo-secret">❓</span>';
+        } else {
+            itemEl.style.backgroundImage = `url('${GAME_ITEMS[i].image}')`;
+        }
+        
+        circle.appendChild(itemEl);
+        
+        const nextAngle = ((i + 0.5) / (MAX_LEVEL + 1)) * Math.PI * 2 - Math.PI / 2;
+        const ax = centerX + radius * Math.cos(nextAngle);
+        const ay = centerY + radius * Math.sin(nextAngle);
+        const arrowEl = document.createElement('div');
+        arrowEl.className = 'evo-arrow';
+        arrowEl.style.left = `${ax}px`;
+        arrowEl.style.top = `${ay}px`;
+        arrowEl.innerText = '→';
+        arrowEl.style.transform = `translate(-50%, -50%) rotate(${nextAngle + Math.PI/2}rad)`;
+        circle.appendChild(arrowEl);
+    }
+}
+
+loadItemVertices();
+createEvolutionUI();
+
+let currentType = 0;
+let nextType = 0;
+let canDrop = true;
+
+function updateNextUI() {
+    document.getElementById('next-img').src = GAME_ITEMS[nextType].image;
+}
+
+function createPreviewItem(x) {
+    if (!gameStarted || gameOver) return;
+    const radius = GAME_ITEMS[currentType].size / 2;
+    const minX = 20 + radius;
+    const maxX = WIDTH - 20 - radius;
+    const targetX = Math.max(minX, Math.min(maxX, x));
+
+    if (window.previewBody) Composite.remove(world, window.previewBody);
+
+    window.previewBody = Bodies.fromVertices(targetX, DEADLINE_Y - 40, [GAME_ITEMS[currentType].vertices], {
+        isStatic: true,
+        isSensor: true,
+        render: {
+            sprite: {
+                texture: GAME_ITEMS[currentType].image,
+                xScale: GAME_ITEMS[currentType].size / 500,
+                yScale: GAME_ITEMS[currentType].size / 500
+            },
+            opacity: 0.6
+        }
+    });
+    Composite.add(world, window.previewBody);
+}
+
+// マウス移動
+window.addEventListener('mousemove', (e) => {
+    const rect = render.canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    if (mouseX >= 0 && mouseX <= WIDTH) {
+        createPreviewItem(mouseX);
+    }
+});
+
+// クリック（投下）
+window.addEventListener('click', (e) => {
+    if (!gameStarted || gameOver || !canDrop) return;
+    const rect = render.canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    if (mouseX < 0 || mouseX > WIDTH) return;
+
+    canDrop = false;
+    if (window.previewBody) Composite.remove(world, window.previewBody);
+
+    const radius = GAME_ITEMS[currentType].size / 2;
+    const minX = 20 + radius;
+    const maxX = WIDTH - 20 - radius;
+    const dropX = Math.max(minX, Math.min(maxX, mouseX));
+
+    const item = Bodies.fromVertices(dropX, DEADLINE_Y - 40, [GAME_ITEMS[currentType].vertices], {
+        restitution: 0.1,
+        friction: 0.2,
+        render: {
+            sprite: {
+                texture: GAME_ITEMS[currentType].image,
+                xScale: GAME_ITEMS[currentType].size / 500,
+                yScale: GAME_ITEMS[currentType].size / 500
+            }
+        }
+    });
+    item.gameType = currentType;
+    Composite.add(world, item);
+
+    setTimeout(() => {
+        if (gameOver) return;
+        currentType = nextType; 
+        nextType = Math.floor(Math.random() * 3); 
+        updateNextUI();
+        
+        createPreviewItem(dropX);
+        canDrop = true;
+    }, 500);
+});
+
+// 衝突合体
+Events.on(engine, 'collisionStart', (event) => {
+    event.pairs.forEach((pair) => {
+        const bodyA = pair.bodyA;
+        const bodyB = pair.bodyB;
+
+        if (bodyA.gameType !== undefined && bodyB.gameType !== undefined && bodyA.gameType === bodyB.gameType) {
+            const currentLevel = bodyA.gameType;
+            if (currentLevel >= MAX_LEVEL) return;
+
+            const newX = (bodyA.position.x + bodyB.position.x) / 2;
+            const newY = (bodyA.position.y + bodyB.position.y) / 2;
+
+            Composite.remove(world, [bodyA, bodyB]);
+
+            score += GAME_ITEMS[currentLevel].score;
+            document.getElementById('score').innerText = score;
+
+            if (score > bestScore) {
+                bestScore = score;
+                document.getElementById('best-score').innerText = bestScore;
+                localStorage.setItem('turtle_best_score', bestScore);
+            }
+
+            const nextLevel = currentLevel + 1;
+            const upgradedItem = Bodies.fromVertices(newX, newY, [GAME_ITEMS[nextLevel].vertices], {
+                restitution: 0.1,
+                friction: 0.2,
+                render: {
+                    sprite: {
+                        texture: GAME_ITEMS[nextLevel].image,
+                        xScale: GAME_ITEMS[nextLevel].size / 500,
+                        yScale: GAME_ITEMS[nextLevel].size / 500
+                    }
+                }
+            });
+            upgradedItem.gameType = nextLevel;
+            Body.setVelocity(upgradedItem, { x: (Math.random() - 0.5) * 2, y: -3 });
+            Composite.add(world, upgradedItem);
+        }
+    });
+});
+
+// ゲームオーバー監視
+Events.on(engine, 'afterUpdate', () => {
+    if (!gameStarted || gameOver) return;
+
+    let isOverLine = false;
+    const allBodies = Composite.allBodies(world);
+
+    for (let body of allBodies) {
+        if (!body.isStatic && body.gameType !== undefined) {
+            const radius = GAME_ITEMS[body.gameType].size / 2;
+            if (body.position.y - radius < DEADLINE_Y) {
+                isOverLine = true;
+                break;
+            }
+        }
+    }
+
+    if (isOverLine) {
+        if (!deadlineTimer) {
+            deadlineTimer = setTimeout(() => { triggerGameOver(); }, 3000);
+        }
+    } else {
+        if (deadlineTimer) {
+            clearTimeout(deadlineTimer);
+            deadlineTimer = null;
+        }
+    }
+});
+
+function triggerGameOver() {
+    gameOver = true;
+    if (window.previewBody) Composite.remove(world, window.previewBody);
+    
+    document.getElementById('final-score').innerText = score;
+    const goScreen = document.getElementById('gameover-screen');
+    goScreen.style.display = 'flex';
+    setTimeout(() => { goScreen.style.opacity = '1'; }, 10);
+    Runner.stop(runner);
+}
+
+// ゲーム開始ボタンと暗転処理
+document.getElementById('start-btn').addEventListener('click', () => {
+    const blackout = document.getElementById('blackout-overlay');
+    const startScreen = document.getElementById('start-screen');
+    
+    blackout.style.opacity = '1';
+    
+    setTimeout(() => {
+        gameStarted = true;
+        startScreen.style.display = 'none'; 
+        
+        Runner.run(runner, engine);
+        currentType = Math.floor(Math.random() * 3);
+        nextType = Math.floor(Math.random() * 3);
+        updateNextUI();
+        createPreviewItem(WIDTH / 2);
+        
+        blackout.style.opacity = '0';
+    }, 400);
+});
+
+// リトライボタン
+document.getElementById('retry-btn').addEventListener('click', () => {
+    const allBodies = Composite.allBodies(world);
+    allBodies.forEach(body => {
+        if (!body.isStatic) Composite.remove(world, body);
+    });
+
+    score = 0;
+    document.getElementById('score').innerText = '0';
+    gameOver = false;
+    deadlineTimer = null;
+
+    const goScreen = document.getElementById('gameover-screen');
+    goScreen.style.opacity = '0';
+    setTimeout(() => { goScreen.style.display = 'none'; }, 300);
+
+    Runner.run(runner, engine);
+    currentType = Math.floor(Math.random() * 3);
+    nextType = Math.floor(Math.random() * 3);
+    updateNextUI();
+    createPreviewItem(WIDTH / 2);
+    canDrop = true;
+});
+</script>
+
+</body>
+</html>
